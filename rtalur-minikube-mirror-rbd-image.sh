@@ -4,7 +4,7 @@ PRIMARY_CLUSTER="${PRIMARY_CLUSTER:-minicluster1}"
 SECONDARY_CLUSTER="${SECONDARY_CLUSTER:-minicluster2}"
 
 STORAGECLASS_NAME="rook-ceph-block"
-PVC_NAME="rbd-pvc"
+PVC_NAME="rbd-pvc-test"
 
 cat <<EOF | kubectl --context="${PRIMARY_CLUSTER}" apply -f -
 apiVersion: storage.k8s.io/v1
@@ -37,10 +37,11 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 8Gi
   storageClassName: "${STORAGECLASS_NAME}"
 EOF
 
+sleep 10
 if ! kubectl --context="${PRIMARY_CLUSTER}" get pvc/"${PVC_NAME}" | grep -q "Bound"
 then
     echo "PVC isn't Bound"

@@ -5,23 +5,21 @@ echo PROFILE is $PROFILE
 
 if [[ $1 == "destroy" ]]
 then
-	minikube --profile="${PROFILE}" stop
 	minikube --profile="${PROFILE}" delete
 	sudo rm -f /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G
-        virsh pool-refresh default
         exit 0
 fi
 
-minikube start -b kubeadm --kubernetes-version="v1.19.2" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" --profile="${PROFILE}"
+minikube start --force -b kubeadm --driver=kvm2 --kubernetes-version="v1.20.7" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" --profile="${PROFILE}"
 minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook" --profile="${PROFILE}"
 minikube ssh "sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="${PROFILE}"
 sudo qemu-img create -f raw /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G 50G
 virsh -c qemu:///system attach-disk "${PROFILE}" --source /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G --target vdb --cache none --persistent
 minikube --profile="${PROFILE}" stop
-minikube --profile="${PROFILE}" start
-kubectl create -f ~/Code/go/src/github.com/rook/rook/cluster/examples/kubernetes/ceph/common.yaml --context=${PROFILE}
-kubectl create -f ~/Code/go/src/github.com/rook/rook/cluster/examples/kubernetes/ceph/crds.yaml --context=${PROFILE}
-kubectl create -f ~/Code/go/src/github.com/rook/rook/cluster/examples/kubernetes/ceph/operator.yaml --context=${PROFILE}
+minikube --profile="${PROFILE}" start --force --driver=kvm2 --kubernetes-version="v1.20.7" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true"
+kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/common.yaml --context=${PROFILE}
+kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/crds.yaml --context=${PROFILE}
+kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/operator.yaml --context=${PROFILE}
 cat <<EOF | kubectl --context=${PROFILE} apply -f -
 kind: ConfigMap
 apiVersion: v1
@@ -62,7 +60,8 @@ spec:
         interval: 45s
         timeout: 600s
 EOF
-kubectl create -f ~/Code/go/src/github.com/rook/rook/cluster/examples/kubernetes/ceph/toolbox.yaml --context=${PROFILE}
+kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/toolbox.yaml --context=${PROFILE}
+kubectl --context=${PROFILE} set image deployment/rook-ceph-operator *=rook/ceph:v1.6.0 -nrook-ceph 
 cat <<EOF | kubectl --context=${PROFILE} apply -f -
 apiVersion: ceph.rook.io/v1
 kind: CephBlockPool
@@ -77,6 +76,5 @@ spec:
     mode: image
     # schedule(s) of snapshot
     snapshotSchedules:
-      - interval: 24h # daily snapshots
-        startTime: 14:00:00-05:00
+      - interval: 20m # daily snapshots
 EOF

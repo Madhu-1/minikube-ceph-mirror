@@ -5,10 +5,11 @@ SECONDARY_CLUSTER="${SECONDARY_CLUSTER:-minicluster2}"
 
 SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context="${SECONDARY_CLUSTER}" -nrook-ceph -o jsonpath='{.status.info.rbdMirrorBootstrapPeerSecretName}')
 SECONDARY_CLUSTER_SECRET=$(kubectl get secret -n rook-ceph "${SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME}" --context=${SECONDARY_CLUSTER} -o jsonpath='{.data.token}'| base64 -d)
-SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.summary.summary.site_name}')
-#echo SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME is $SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME
-#echo Token for the secondary cluster is $SECONDARY_CLUSTER_SECRET
-#echo SECONDARY_CLUSTER_SITE_NAME is ${SECONDARY_CLUSTER_SITE_NAME}
+#SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.summary.summary.site_name}')
+SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.site_name}')
+echo SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME is $SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME
+echo Token for the secondary cluster is $SECONDARY_CLUSTER_SECRET
+echo SECONDARY_CLUSTER_SITE_NAME is ${SECONDARY_CLUSTER_SITE_NAME}
 
 kubectl -n rook-ceph create secret generic --context="${PRIMARY_CLUSTER}" "${SECONDARY_CLUSTER_SITE_NAME}" \
         --from-literal=token=${SECONDARY_CLUSTER_SECRET} \
@@ -27,6 +28,7 @@ spec:
       - "${SECONDARY_CLUSTER_SITE_NAME}"
 EOF
 
+sleep 10
 
 if kubectl --context="${PRIMARY_CLUSTER}" -n rook-ceph  get pods | grep -q rbd-mirror
 then
@@ -35,6 +37,8 @@ else
         echo "Did not find rbd mirror pod, :("
         exit 1
 fi
+
+sleep 5
 
 if [[ $(kubectl get cephblockpools.ceph.rook.io replicapool --context="${PRIMARY_CLUSTER}" -nrook-ceph -o jsonpath='{.status.mirroringStatus.summary.summary.daemon_health}') != "OK" ]]
 then 
