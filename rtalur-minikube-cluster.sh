@@ -10,13 +10,17 @@ then
         exit 0
 fi
 
-minikube start --force -b kubeadm --driver=kvm2 --kubernetes-version="v1.20.7" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" --profile="${PROFILE}"
+#minikube start --force -b kubeadm --driver=kvm2 --kubernetes-version="v1.22.0" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" --profile="${PROFILE}"
+minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.0" --profile="${PROFILE}"
+
 minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook" --profile="${PROFILE}"
 minikube ssh "sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="${PROFILE}"
 sudo qemu-img create -f raw /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G 50G
 virsh -c qemu:///system attach-disk "${PROFILE}" --source /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G --target vdb --cache none --persistent
 minikube --profile="${PROFILE}" stop
-minikube --profile="${PROFILE}" start --force --driver=kvm2 --kubernetes-version="v1.20.7" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true"
+#minikube --profile="${PROFILE}" start --force --driver=kvm2 --kubernetes-version="v1.22.0" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true"
+minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.0" --profile="${PROFILE}"
+
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/common.yaml --context=${PROFILE}
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/crds.yaml --context=${PROFILE}
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/operator.yaml --context=${PROFILE}
@@ -40,13 +44,13 @@ metadata:
 spec:
   dataDirHostPath: /var/lib/rook
   cephVersion:
-    image: ceph/ceph:v15
+    image: ceph/ceph:v16
     allowUnsupported: true
   mon:
     count: 1
     allowMultiplePerNode: true
   dashboard:
-    enabled: true
+    enabled: false
   crashCollector:
     disable: true
   storage:
@@ -61,7 +65,7 @@ spec:
         timeout: 600s
 EOF
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/toolbox.yaml --context=${PROFILE}
-kubectl --context=${PROFILE} set image deployment/rook-ceph-operator *=rook/ceph:v1.6.0 -nrook-ceph 
+#kubectl --context=${PROFILE} set image deployment/rook-ceph-operator *=quay.io/sp1098/rook:id-map -nrook-ceph 
 cat <<EOF | kubectl --context=${PROFILE} apply -f -
 apiVersion: ceph.rook.io/v1
 kind: CephBlockPool
@@ -76,5 +80,6 @@ spec:
     mode: image
     # schedule(s) of snapshot
     snapshotSchedules:
-      - interval: 20m # daily snapshots
+      - interval: 1h # daily snapshots
+        startTime: 14:00:00-05:00
 EOF
