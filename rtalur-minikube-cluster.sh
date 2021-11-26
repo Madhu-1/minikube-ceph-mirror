@@ -10,16 +10,14 @@ then
         exit 0
 fi
 
-#minikube start --force -b kubeadm --driver=kvm2 --kubernetes-version="v1.22.0" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true" --profile="${PROFILE}"
-minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.0" --profile="${PROFILE}"
+minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.2" --profile="${PROFILE}" --feature-gates="ReadWriteOncePod=true"
 
 minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook" --profile="${PROFILE}"
 minikube ssh "sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="${PROFILE}"
 sudo qemu-img create -f raw /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G 50G
 virsh -c qemu:///system attach-disk "${PROFILE}" --source /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G --target vdb --cache none --persistent
 minikube --profile="${PROFILE}" stop
-#minikube --profile="${PROFILE}" start --force --driver=kvm2 --kubernetes-version="v1.22.0" --feature-gates="BlockVolume=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,ExpandCSIVolumes=true"
-minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.0" --profile="${PROFILE}"
+minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.2" --profile="${PROFILE}" --feature-gates="ReadWriteOncePod=true"
 
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/common.yaml --context=${PROFILE}
 kubectl create -f /root/workspace/rook/rook/cluster/examples/kubernetes/ceph/crds.yaml --context=${PROFILE}
@@ -79,7 +77,7 @@ spec:
     enabled: true
     mode: image
     # schedule(s) of snapshot
-    snapshotSchedules:
-      - interval: 1h # daily snapshots
-        startTime: 14:00:00-05:00
+    #snapshotSchedules:
+      #- interval: 1h # daily snapshots
+        # startTime: 14:00:00-05:00
 EOF

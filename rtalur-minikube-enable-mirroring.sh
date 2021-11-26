@@ -3,15 +3,48 @@
 PRIMARY_CLUSTER="${PRIMARY_CLUSTER:-minicluster1}"
 SECONDARY_CLUSTER="${SECONDARY_CLUSTER:-minicluster2}"
 
-#SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context="${SECONDARY_CLUSTER}" -nrook-ceph -o jsonpath='{.status.info.rbdMirrorBootstrapPeerSecretName}')
+
+# patch rook configmap to override required configuration for DR
+
+kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml --context="${PRIMARY_CLUSTER}"
+
+kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml --context="${SECONDARY_CLUSTER}"
+
+kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml --context="${PRIMARY_CLUSTER}"
+
+kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml  --context="${SECONDARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_OMAP_GENERATOR", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_OMAP_GENERATOR", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_ALLOW_UNSUPPORTED_VERSION", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_ALLOW_UNSUPPORTED_VERSION", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
+
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_VOLUME_REPLICATION_IMAGE", "value": "quay.io/csiaddons/volumereplication-operator:v0.1.0" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_VOLUME_REPLICATION_IMAGE", "value": "quay.io/csiaddons/volumereplication-operator:v0.1.0" }]' --context="${SECONDARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_LOG_LEVEL", "value": "5" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_LOG_LEVEL", "value": "5" }]' --context="${SECONDARY_CLUSTER}"
+
+# Replace cephcsi image
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_CEPH_IMAGE", "value": "madhupr001/cephcsi:v4" }]' --context="${SECONDARY_CLUSTER}"
+
+# SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME=$(kubectl get cephblockpools.ceph.rook.io blockpool --context="${SECONDARY_CLUSTER}" -nrook-ceph -o jsonpath='{.status.info.rbdMirrorBootstrapPeerSecretName}')
 
 SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME=cluster-peer-token-my-cluster
 
 SECONDARY_CLUSTER_SECRET=$(kubectl get secret -n rook-ceph "${SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME}" --context=${SECONDARY_CLUSTER} -o jsonpath='{.data.token}'| base64 -d)
 
-#SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.summary.summary.site_name}')
+#SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io blockpool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.summary.summary.site_name}')
 
-#SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io replicapool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.site_name}')
+#SECONDARY_CLUSTER_SITE_NAME=$(kubectl get cephblockpools.ceph.rook.io blockpool --context=${SECONDARY_CLUSTER} -nrook-ceph -o jsonpath='{.status.mirroringInfo.site_name}')
 
 SECONDARY_CLUSTER_SITE_NAME=test
 
