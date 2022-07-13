@@ -37,7 +37,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi
+      storage: 10Gi
   storageClassName: "${STORAGECLASS_NAME}"
 EOF
 
@@ -79,6 +79,7 @@ metadata:
 spec:
   volumeReplicationClass: rbd-volumereplicationclass
   replicationState: primary
+  autoResync: false
   dataSource:
     apiGroup: "" 
     kind: PersistentVolumeClaim
