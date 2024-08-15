@@ -10,18 +10,18 @@ then
         exit 0
 fi
 
-minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.2" --profile="${PROFILE}" --feature-gates="ReadWriteOncePod=true"  --extra-disks=3 --disk-size=30g
+minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.27.0" --profile="${PROFILE}" --feature-gates="ReadWriteOncePod=true,AnyVolumeDataSource=true,CrossNamespaceVolumeDataSource=true"  --extra-disks=3 --disk-size=30g
 
 minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook" --profile="${PROFILE}"
 minikube ssh "sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="${PROFILE}"
-#sudo qemu-img create -f raw /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G 50G
-#virsh -c qemu:///system attach-disk "${PROFILE}" --source /var/lib/libvirt/images/minikube-box2-vm-disk-"${PROFILE}"-50G --target vdb --cache none --persistent
-#minikube --profile="${PROFILE}" stop
-#minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kubernetes-version="v1.22.2" --profile="${PROFILE}" --feature-gates="ReadWriteOncePod=true"
 
-kubectl create -f /root/workspace/rook/rook/deploy/examples/common.yaml --context=${PROFILE}
-kubectl create -f /root/workspace/rook/rook/deploy/examples/crds.yaml --context=${PROFILE}
-kubectl create -f /root/workspace/rook/rook/deploy/examples/operator.yaml --context=${PROFILE}
+kubectl create -f ./rook/rook/deploy/examples/common.yaml --context=${PROFILE}
+kubectl create -f ./rook/rook/deploy/examples/crds.yaml --context=${PROFILE}
+kubectl create -f ./rook/rook/deploy/examples/operator.yaml --context=${PROFILE}
+kubectl create -f https://raw.githubusercontent.com/csi-addons/kubernetes-csi-addons/main/deploy/controller/setup-controller.yaml --context=${PROFILE}
+kubectl create -f https://raw.githubusercontent.com/csi-addons/kubernetes-csi-addons/main/deploy/controller/crds.yaml --context=${PROFILE}
+kubectl create -f https://raw.githubusercontent.com/csi-addons/kubernetes-csi-addons/main/deploy/controller/rbac.yaml --context=${PROFILE}
+
 cat <<EOF | kubectl --context=${PROFILE} apply -f -
 kind: ConfigMap
 apiVersion: v1
@@ -42,7 +42,7 @@ metadata:
 spec:
   dataDirHostPath: /var/lib/rook
   cephVersion:
-    image: quay.io/ceph/ceph:v16.2.6
+    image: quay.ceph.io/ceph-ci/ceph:wip-pkalever-rbd-group-snap-mirror
     allowUnsupported: true
   mon:
     count: 1
@@ -62,7 +62,7 @@ spec:
         interval: 45s
         timeout: 600s
 EOF
-kubectl create -f /root/workspace/rook/rook/deploy/examples/toolbox.yaml --context=${PROFILE}
+kubectl create -f ./rook/rook/deploy/examples/toolbox.yaml --context=${PROFILE}
 #kubectl --context=${PROFILE} set image deployment/rook-ceph-operator *=madhupr001/rook -nrook-ceph 
 cat <<EOF | kubectl --context=${PROFILE} apply -f -
 apiVersion: ceph.rook.io/v1

@@ -6,14 +6,6 @@ SECONDARY_CLUSTER="${SECONDARY_CLUSTER:-minicluster2}"
 
 # patch rook configmap to override required configuration for DR
 
-kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml --context="${PRIMARY_CLUSTER}"
-
-kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplications.yaml --context="${SECONDARY_CLUSTER}"
-
-kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml --context="${PRIMARY_CLUSTER}"
-
-kubectl create -f https://raw.githubusercontent.com/csi-addons/volume-replication-operator/main/config/crd/bases/replication.storage.openshift.io_volumereplicationclasses.yaml  --context="${SECONDARY_CLUSTER}"
-
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_OMAP_GENERATOR", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_OMAP_GENERATOR", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
 
@@ -23,8 +15,8 @@ kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
 
-kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
-kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_VOLUME_REPLICATION", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_CSIADDONS", "value": "true" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_ENABLE_CSIADDONS", "value": "true" }]' --context="${SECONDARY_CLUSTER}"
 
 
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_VOLUME_REPLICATION_IMAGE", "value": "quay.io/csiaddons/volumereplication-operator:latest" }]' --context="${PRIMARY_CLUSTER}"
@@ -34,7 +26,9 @@ kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{
 kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/CSI_LOG_LEVEL", "value": "5" }]' --context="${SECONDARY_CLUSTER}"
 
 # Replace cephcsi image
-kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_CEPH_IMAGE", "value": "quay.io/cephcsi/cephcsi:canary" }]' --context="${PRIMARY_CLUSTER}"
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_CEPH_IMAGE", "value": "madhupr001/cephcsi:v2" }]' --context="${PRIMARY_CLUSTER}"
+
+kubectl patch cm rook-ceph-operator-config -n rook-ceph --type json --patch  '[{ "op": "add", "path": "/data/ROOK_CSI_CEPH_IMAGE", "value": "madhupr001/cephcsi:v2" }]' --context="${SECONDARY_CLUSTER}"
 
 # SECONDARY_CLUSTER_PEER_TOKEN_SECRET_NAME=$(kubectl get cephblockpools.ceph.rook.io blockpool --context="${SECONDARY_CLUSTER}" -nrook-ceph -o jsonpath='{.status.info.rbdMirrorBootstrapPeerSecretName}')
 
