@@ -15,6 +15,12 @@ minikube start --force -b kubeadm --driver=kvm2 --network=vagrant-libvirt --kube
 minikube ssh "sudo mkdir -p /mnt/vda1/var/lib/rook" --profile="${PROFILE}"
 minikube ssh "sudo ln -s /mnt/vda1/var/lib/rook /var/lib/rook" --profile="${PROFILE}"
 
+rm -rf rook
+mkdir -p rook
+cd rook
+git clone https://github.com/rook/rook.git
+cd ..
+
 kubectl create -f ./rook/rook/deploy/examples/common.yaml --context=${PROFILE}
 kubectl create -f ./rook/rook/deploy/examples/crds.yaml --context=${PROFILE}
 kubectl create -f ./rook/rook/deploy/examples/operator.yaml --context=${PROFILE}
@@ -42,7 +48,7 @@ metadata:
 spec:
   dataDirHostPath: /var/lib/rook
   cephVersion:
-    image: quay.ceph.io/ceph-ci/ceph:wip-pkalever-rbd-group-snap-mirror
+    image: quay.io/ceph/ceph:v19
     allowUnsupported: true
   mon:
     count: 1

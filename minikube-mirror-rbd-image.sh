@@ -4,7 +4,7 @@ PRIMARY_CLUSTER="${PRIMARY_CLUSTER:-minicluster2}"
 SECONDARY_CLUSTER="${SECONDARY_CLUSTER:-minicluster1}"
 
 STORAGECLASS_NAME="rook-ceph-block"
-PVC_NAME="rbd-pvc-test"
+PVC_NAME="rbd-pvc-test-1"
 
 cat <<EOF | kubectl --context="${PRIMARY_CLUSTER}" apply -f -
 apiVersion: storage.k8s.io/v1
@@ -86,11 +86,16 @@ spec:
     name: "${PVC_NAME}"
 EOF
 
-kubectl --context="${PRIMARY_CLUSTER}" -n rook-ceph exec ${CEPH_TOOLBOX_POD} -- rbd info "${RBD_IMAGE_NAME}" --pool=replicapool
-
 sleep 60
 
-CEPH_TOOLBOX_POD=$(kubectl --context="${SECONDARY_CLUSTER}" -n rook-ceph get pods -l  app=rook-ceph-tools -o jsonpath='{.items[0].metadata.name}')
-echo CEPH_TOOLBOX_POD on secondary cluster is $CEPH_TOOLBOX_POD
+kubectl --context="${PRIMARY_CLUSTER}" get volumereplication ${PVC_NAME} -oyaml
 
-kubectl --context="${SECONDARY_CLUSTER}" -n rook-ceph exec ${CEPH_TOOLBOX_POD} -- rbd info "${RBD_IMAGE_NAME}" --pool=replicapool
+SECONDARY_CEPH_TOOLBOX_POD=$(kubectl --context="${SECONDARY_CLUSTER}" -n rook-ceph get pods -l  app=rook-ceph-tools -o jsonpath='{.items[0].metadata.name}')
+PRIMARY_CEPH_TOOLBOX_POD=$(kubectl --context="${PRIMARY_CLUSTER}" -n rook-ceph get pods -l  app=rook-ceph-tools -o jsonpath='{.items[0].metadata.name}')
+echo CEPH_TOOLBOX_POD on primary cluster is $PRIMARY_CEPH_TOOLBOX_POD
+echo CEPH_TOOLBOX_POD on secondary cluster is $SECONDARY_CEPH_TOOLBOX_POD
+
+kubectl --context="${PRIMARY_CLUSTER}" -n rook-ceph exec ${PRIMARY_CEPH_TOOLBOX_POD} -- rbd info "${RBD_IMAGE_NAME}" --pool=replicapool
+kubectl --context="${PRIMARY_CLUSTER}" -n rook-ceph exec ${PRIMARY_CEPH_TOOLBOX_POD} -- rbd mirror image status "${RBD_IMAGE_NAME}" --pool=replicapool
+kubectl --context="${SECONDARY_CLUSTER}" -n rook-ceph exec ${SECONDARY_CEPH_TOOLBOX_POD} -- rbd info "${RBD_IMAGE_NAME}" --pool=replicapool
+kubectl --context="${SECONDARY_CLUSTER}" -n rook-ceph exec ${SECONDARY_CEPH_TOOLBOX_POD} -- rbd mirror image status "${RBD_IMAGE_NAME}" --pool=replicapool
