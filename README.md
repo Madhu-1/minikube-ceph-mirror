@@ -265,7 +265,7 @@ NAME         DATADIRHOSTPATH   MONCOUNT   AGE     PHASE   MESSAGE               
 my-cluster   /var/lib/rook     1          7m44s   Ready   Cluster created successfully   HEALTH_OK              5d7d5672-8658-4936-b453-5e75000c0277
 ```
 
-#Enable mirroring between 2 clusters
+# Enable mirroring between 2 clusters
 
 ```bash=
 # ./minikube-enable-mirroring.sh mirror
